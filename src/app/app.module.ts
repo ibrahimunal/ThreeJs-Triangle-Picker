@@ -4,11 +4,13 @@ import { NgModule } from '@angular/core';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { PrimitiveControlComponent } from './primitive-control/primitive-control.component';
+import { ShadowComponent } from './shadow/shadow.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    PrimitiveControlComponent
+    PrimitiveControlComponent,
+    ShadowComponent
   ],
   imports: [
     BrowserModule,
