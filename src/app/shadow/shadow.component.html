@@ -1,2 +1,23 @@
-<canvas style="outline: none;" id="canvas"></canvas>
-  
+<!-- <canvas style="outline: none;" id="canvas"></canvas> -->
+<div style="position:absolute; color:black;" id="distancePlace">0 mm</div>
+<button id="Xplus">X+ </button>
+<button id="Xminus">X- </button>
+<button id="Yplus">Y+ </button>   
+<button id="Yminus">Y- </button>
+<button id="Zplus">Z+ </button>
+<button id="Zminus">Z- </button>  
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+
+<div class="fileSaver bg-warning" style="width: 150;">
+    <!-- <label for="myfile">Select a file:</label> -->
+    <input type="file" #inputHolder id = 'inputHolder'class="bg-white " style="width: 250px; border: 2px solid black ; border-radius: 5px;">
+</div>
+
+<div id="3dCanvas"></div>
+<!-- <button class="btn btn-danger" (click)="testFunc()">test</button> -->
+<!-- <input type="file" (change)="uploadFile($event)">
+
+<button class="btn btn-danger" (click)= "testFunc">ng-button</button> -->
+
