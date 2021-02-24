@@ -4,21 +4,25 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import {GUI}  from 'three/examples/jsm/libs/dat.gui.module';
+import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree, CONTAINED, INTERSECTED, NOT_INTERSECTED } from '../../../three-src/index';
 import * as $ from 'jquery/dist/jquery.min.js';
-
-
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { Color, Mesh, TorusGeometry } from 'three/build/three.module';
 import {DecalGeometry} from  'three/examples/jsm/geometries/DecalGeometry.js';
 import {Camera} from 'three/src/cameras/Camera.js';
 import { Frustum } from 'three';
 
+// THREE.Mesh.prototype.raycast = acceleratedRaycast;
+// THREE.BufferGeometry.prototype.computeBoundingBox = computeBoundsTree;
+// THREE.BufferGeometry.prototype.dispose = disposeBoundsTree;
 @Component({
   selector: 'app-shadow',
   templateUrl: './shadow.component.html',
   styleUrls: ['./shadow.component.css'],
 })
 export class ShadowComponent implements OnInit {
+
+  private bufferGeo: THREE.BufferGeometry;
   constructor() {}
   
   @ViewChild('inputHolder') someInput: ElementRef;
@@ -53,6 +57,7 @@ export class ShadowComponent implements OnInit {
     let scene,helperScene, renderer, object, stats, helpScene;
 			let planes, planeObjects, planeHelpers;
       let clock;
+      let targetMesh, brushMesh;
       var raycaster = new THREE.Raycaster();
       var mesh,decalLine;
       const loader= new STLLoader();;
@@ -213,6 +218,7 @@ export class ShadowComponent implements OnInit {
          console.log(intersects);
         if (intersects.length > 0) {
           points[clicks].copy(intersects[0].point);
+          console.log(intersects[0]);
           markers[clicks].position.copy(intersects[0].point);
           setLine(intersects[0].point, intersects[0].point);
           clicks++;
@@ -440,8 +446,24 @@ export class ShadowComponent implements OnInit {
       //     alert($(this).val()); 
       //     console.log("asdasd");
       //  });
+      function createBrush(){
+        const brushGeometry = new THREE.SphereBufferGeometry( 1, 40, 40 );
+        const brushMaterial = new THREE.MeshStandardMaterial( {
+          color: 0xEC407A,
+          roughness: 0.75,
+          metalness: 0,
+          transparent: true,
+          opacity: 0.5,
+          premultipliedAlpha: true,
+          emissive: 0xEC407A,
+          emissiveIntensity: 0.5,
+        } );
+      
+        brushMesh = new THREE.Mesh( brushGeometry, brushMaterial );
+        scene.add( brushMesh );
+      }
 
-
+      createBrush();
 
       $('#inputHolder').change(function() {
         var filePath = $(this).val();
@@ -452,9 +474,10 @@ export class ShadowComponent implements OnInit {
         alert($(this).val()); 
         loader.load("../assets/"+stlName, function(geometry) {
           var geo = new THREE.Geometry().fromBufferGeometry( geometry );
-          
+            geometry.computeBoundingBox();
+            console.log(geometry);
             var material = new THREE.MeshPhongMaterial({
-       
+              
               // color: 0x34c3eb ,  
             //   wireframe: false,
             clippingPlanes:planes,
