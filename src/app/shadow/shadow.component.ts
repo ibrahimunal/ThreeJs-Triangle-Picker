@@ -4,17 +4,23 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import {GUI}  from 'three/examples/jsm/libs/dat.gui.module';
-import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree, CONTAINED, INTERSECTED, NOT_INTERSECTED } from '../../../three-src/index';
+// import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree, CONTAINED, INTERSECTED, NOT_INTERSECTED } from '../../../three-src/index';
 import * as $ from 'jquery/dist/jquery.min.js';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { Color, Mesh, TorusGeometry } from 'three/build/three.module';
 import {DecalGeometry} from  'three/examples/jsm/geometries/DecalGeometry.js';
 import {Camera} from 'three/src/cameras/Camera.js';
 import { Frustum } from 'three';
+import { trimWhiteSpaces , computeBoundsTree} from '../shadow/string-helper';
 
-THREE.Mesh.prototype.raycast = acceleratedRaycast;
-THREE.BufferGeometry.prototype.computeBoundingBox = computeBoundsTree;
-THREE.BufferGeometry.prototype.dispose = disposeBoundsTree;
+
+
+
+
+// THREE.Mesh.prototype.raycast = acceleratedRaycast;
+// THREE.BufferGeometry.prototype.com = computeBoundsTree;
+// THREE.BufferGeometry.prototype.dispose = disposeBoundsTree;
+
 @Component({
   selector: 'app-shadow',
   templateUrl: './shadow.component.html',
@@ -53,7 +59,9 @@ export class ShadowComponent implements OnInit {
   main() {
 
 
-
+      var testStr = "asdFasd fsdf gdfg";
+      
+      console.log(testStr.specialToUpperCase());
     let scene,helperScene, renderer, object, stats, helpScene;
 			let planes, planeObjects, planeHelpers;
       let clock;
@@ -62,6 +70,9 @@ export class ShadowComponent implements OnInit {
       var mesh,decalLine;
       const loader= new STLLoader();;
     	var	camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 10000 );
+      renderer = new THREE.WebGLRenderer( { antialias: true } );
+      let mouseType = - 1;
+
       // var container = document.getElementById( 'container' );
       var intersects = [];
       var selectionColor = new THREE.Color("red");
@@ -109,9 +120,9 @@ export class ShadowComponent implements OnInit {
             
             init();
             animate();
-            document.addEventListener("contextmenu", onDocumentMouseDown, false);
+            // document.addEventListener("contextmenu", onDocumentMouseDown, false);
 
-            canvasElement.addEventListener("click", paint2, false);
+            // canvasElement.addEventListener("click", paint2, false);
             // document.addEventListener("mousemove", cursorMove, false);
           
 
@@ -273,13 +284,12 @@ export class ShadowComponent implements OnInit {
 
 			function init() {
 
-
         helperScene = new THREE.Scene();
         clock = new THREE.Clock();
         
 				scene = new THREE.Scene();
         
-        
+
 
         // decalLine = new THREE.Line( new THREE.Geometry( ), new THREE.LineBasicMaterial( { linewidth: 4 }) );
         // decalLine.geometry.vertices.push( new THREE.Vector3( 0, 0, 0 ) );
@@ -360,6 +370,55 @@ export class ShadowComponent implements OnInit {
 
                 camera.up = new THREE.Vector3( 0, 0, 1 );
 
+
+                const controls = new OrbitControls( camera, renderer.domElement );
+
+                controls.addEventListener( 'start', function () {
+
+                  this.active = true;
+              
+                } );
+              
+                controls.addEventListener( 'end', function () {
+              
+                  this.active = false;
+              
+                } );
+              
+                window.addEventListener( 'resize', function () {
+              
+                  camera.aspect = window.innerWidth / window.innerHeight;
+                  camera.updateProjectionMatrix();
+              
+                  renderer.setSize( window.innerWidth, window.innerHeight );
+              
+                }, false );
+              
+                window.addEventListener( 'mousemove', function ( e ) {
+              
+                  mouse.x = ( e.clientX / window.innerWidth ) * 2 - 1;
+                  mouse.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
+              
+                } );
+              
+                window.addEventListener( 'mousedown', function ( e ) {
+              
+                  mouseType = e.button;
+              
+                } );
+              
+                window.addEventListener( 'mouseup', function () {
+              
+                  mouseType = - 1;
+              
+                } );
+              
+                window.addEventListener( 'contextmenu', function ( e ) {
+              
+                  e.preventDefault();
+              
+                } );
+
 				scene.add( new THREE.AmbientLight( 0xffffff, 0.5 ) );
 
 				var light = new THREE.DirectionalLight( 0xffffff );
@@ -399,7 +458,7 @@ export class ShadowComponent implements OnInit {
 				// Set up clip plane rendering
 				planeObjects = [];
 				const planeGeom = new THREE.PlaneBufferGeometry( 150, 150);
-        
+
         // loadFileButton.addEventListener('change' , function (e){
               
         //   var reader = new FileReader();
@@ -464,6 +523,9 @@ export class ShadowComponent implements OnInit {
       }
 
       createBrush();
+      
+      var colorArray = new Uint8Array();
+      var colorAttr = new THREE.BufferAttribute(colorArray, 3 ,true);
 
       $('#inputHolder').change(function() {
         var filePath = $(this).val();
@@ -472,99 +534,110 @@ export class ShadowComponent implements OnInit {
         stlName =(stlName[stlName.length -1]);
         console.log(stlName);
         alert($(this).val()); 
-        loader.load("../assets/"+stlName, function(geometry) {
-          var geo = new THREE.Geometry().fromBufferGeometry( geometry );
-            geometry.computeBoundingBox();
-            console.log(geometry);
-            var material = new THREE.MeshPhongMaterial({
-              
-              // color: 0x34c3eb ,  
-            //   wireframe: false,
-            clippingPlanes:planes,
-              // transparent: true, 
-              side: THREE.DoubleSide,
-                vertexColors: true,
-                clipIntersection : false,
-              // depthTest: true, 
-              // depthWrite: true, 
-              // polygonOffset: true,
-              // polygonOffsetFactor: -4, 
-              // flatShading : THREE.SmoothShadings
-            });     
-            // const count = geometry.attributes.position.count; 
-            // geometry.setAttribute('color',new THREE.BufferAttribute( new Float32Array(count*3), 3 ));
-
-            // // const positions1 = geometry.attributes.position;
-            // const colors1 = geometry.attributes.color;
-            // for ( let i = 0; i < count; i ++ ) {
-            //   colors1.setXYZ( i,color.r+20, color.g+100, color.b +100);
-            // }
-            // let mesh = new THREE.MeshPhongMaterial(geometry, material);
-            mesh = new THREE.Mesh(geo, material);
-            mesh.geometry.frustumCulled = false;
-            //  var geo = new THREE.EdgesGeometry( mesh.geometry ); // or WireframeGeometry
-            console.log(mesh);
-            //  var mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
-            // mesh.geometry.attributes.color.needsUpdate = true;
-            //  var wireframe = new THREE.LineSegments( geo, mat );
-            //  mesh.add( wireframe );
-            // scene.add(mesh);
-            console.log("function workssss");
-            // painter = new THREE.TexturePainter( renderer, camera, mesh );
-            for ( let i = 0; i < 3; i ++ ) {
-
-                const poGroup = new THREE.Group();
-                const plane = planes[ i ];
-                const stencilGroup = createPlaneStencilGroup( geo, plane, i + 1 );
-
-                // plane is clipped by the other clipping planes
-                const planeMat =
-                    new THREE.MeshStandardMaterial( {
-
-                        color: 0x34c3eb,
-                        metalness: 0.1,
-                        roughness: 0.75,
-                        clippingPlanes: planes.filter( p => p !== plane ),
-
-                        stencilWrite: true,
-                        stencilRef: 0,
-                        stencilFunc: THREE.NotEqualStencilFunc,
-                        stencilFail: THREE.ReplaceStencilOp,
-                        stencilZFail: THREE.ReplaceStencilOp,
-                        stencilZPass: THREE.ReplaceStencilOp,
-
-                    } );
-                const po = new THREE.Mesh( planeGeom, planeMat );
-                po.onAfterRender = function ( renderer ) {
-
-                    renderer.clearStencil();
-
-                };
-
-                po.renderOrder = i + 1.1;
-
-                object.add( stencilGroup );
-                poGroup.add( po );
-                planeObjects.push( po );
-                scene.add( poGroup );
-
-            }
-            const clippedColorFront = new THREE.Mesh( geo, material );
-            clippedColorFront.castShadow = true;
-            clippedColorFront.renderOrder = 6;
-            object.add( clippedColorFront );
-            
-                        
-          });
+        //stl loader PART IS HEREEE
      });
 
+     loader.load("../assets/simple.stl", function(geometry) {
+      // var geo = new THREE.Geometry().fromBufferGeometry( geometry );
+        geometry.toNonIndexed();
+        colorArray = new Uint8Array( geometry.attributes.position.count * 3 );
+        colorArray.fill( 255 );
+        colorAttr = new THREE.BufferAttribute( colorArray, 3, true );
+        // colorAttr.dynamic = true;
+        geometry.setAttribute( 'color', colorAttr );
+        
+        console.log(geometry);
+        var material = new THREE.MeshPhongMaterial({
+          
+           color: 0x34c3eb ,  
+        //   wireframe: false,
+        clippingPlanes:planes,
+          // transparent: true, 
+          side: THREE.DoubleSide,
+            vertexColors: true,
+            clipIntersection : false,
+          // depthTest: true, 
+          // depthWrite: true, 
+          // polygonOffset: true,
+          // polygonOffsetFactor: -4, 
+          // flatShading : THREE.SmoothShadings
+        });     
+        // const count = geometry.attributes.position.count; 
+        // geometry.setAttribute('color',new THREE.BufferAttribute( new Float32Array(count*3), 3 ));
 
+        // // const positions1 = geometry.attributes.position;
+        // const colors1 = geometry.attributes.color;
+        // for ( let i = 0; i < count; i ++ ) {
+        //   colors1.setXYZ( i,color.r+20, color.g+100, color.b +100);
+        // }
+        // let mesh = new THREE.MeshPhongMaterial(geometry, material);
+        mesh = new THREE.Mesh(geometry, material);
+
+        // mesh.geometry.frustumCulled = false;
+        //  var geo = new THREE.EdgesGeometry( mesh.geometry ); // or WireframeGeometry
+        geometry.computeBoundingBox();
+        
+        const bvh = geometry;
+        //  var mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
+        // mesh.geometry.attributes.color.needsUpdate = true;
+        //  var wireframe = new THREE.LineSegments( geo, mat );
+        //  mesh.add( wireframe );
+        // scene.add(mesh);
+        console.log("function workssss");
+        // painter = new THREE.TexturePainter( renderer, camera, mesh );
+        for ( let i = 0; i < 3; i ++ ) {
+
+            const poGroup = new THREE.Group();
+            const plane = planes[ i ];
+            const stencilGroup = createPlaneStencilGroup( geometry, plane, i + 1 );
+
+            // plane is clipped by the other clipping planes
+            const planeMat =
+                new THREE.MeshStandardMaterial( {
+
+                    color: 0x34c3eb,
+                    metalness: 0.1,
+                    roughness: 0.75,
+                    clippingPlanes: planes.filter( p => p !== plane ),
+
+                    stencilWrite: true,
+                    stencilRef: 0,
+                    stencilFunc: THREE.NotEqualStencilFunc,
+                    stencilFail: THREE.ReplaceStencilOp,
+                    stencilZFail: THREE.ReplaceStencilOp,
+                    stencilZPass: THREE.ReplaceStencilOp,
+
+                } );
+            const po = new THREE.Mesh( planeGeom, planeMat );
+            po.onAfterRender = function ( renderer ) {
+
+                renderer.clearStencil();
+
+            };
+
+            po.renderOrder = i + 1.1;
+
+            object.add( stencilGroup );
+            poGroup.add( po );
+            planeObjects.push( po );
+            scene.add( poGroup );
+
+        }
+        const clippedColorFront = new THREE.Mesh( geometry, material );
+        clippedColorFront.castShadow = true;
+        clippedColorFront.renderOrder = 6;
+        object.add( clippedColorFront );
+        
+        console.log("mesh is here yay " + mesh);
+                    
+      });
+      
             
 
 
 
-                  mouseHelper = new THREE.Mesh( new THREE.BoxGeometry( 1, 1, 10 ), new THREE.MeshNormalMaterial() );
-                    	// scene.add( mouseHelper );
+       mouseHelper = new THREE.Mesh( new THREE.BoxGeometry( 1, 1, 10 ), new THREE.MeshNormalMaterial() );
+      // scene.add( mouseHelper );
 
 	
 				// add the color
@@ -586,7 +659,6 @@ export class ShadowComponent implements OnInit {
 				// document.body.appendChild( stats.dom );
 
 				// Renderer
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				// renderer.shadowMap.enabled = true;
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
@@ -597,7 +669,6 @@ export class ShadowComponent implements OnInit {
 				renderer.localClippingEnabled = true;
 
 				// Controls
-				const controls = new OrbitControls( camera, renderer.domElement );
 				// controls.minDistance = 20;
         // controls.maxDistance = 100;
 				controls.update();
@@ -685,46 +756,46 @@ export class ShadowComponent implements OnInit {
 
       }
 
-      function paint2( event ) {
+      // function paint2( event ) {
 
-        event.preventDefault();
+      //   event.preventDefault();
       
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      //   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      //   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
-        raycaster.setFromCamera( mouse, camera );
+      //   raycaster.setFromCamera( mouse, camera );
         
-        var intersects = getIntersections(event);
-        console.log(intersects);
-        if (intersects.length === 0) return;
+      //   var intersects = getIntersections(event);
+      //   console.log(intersects);
+      //   if (intersects.length === 0) return;
      
         
-        // find the new indices of faces
+      //   // find the new indices of faces
 
-        // faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1: faceIdx1 - 1;
+      //   // faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1: faceIdx1 - 1;
 
-        //intersects[0].face.color.setHex(0xe6e566);
+      //   //intersects[0].face.color.setHex(0xe6e566);
         
-        // const intersection = intersects[0];
-        // const faceIndex = intersection.faceIndex;
-        // const object = intersection.object;
-        var faceIdx1 = intersects[0].faceIndex;
-        setFaceColor(faceIdx1, selectionColor);
+      //   // const intersection = intersects[0];
+      //   // const faceIndex = intersection.faceIndex;
+      //   // const object = intersection.object;
+      //   var faceIdx1 = intersects[0].faceIndex;
+      //   setFaceColor(faceIdx1, selectionColor);
 
-        // object.geometry.faces[ faceIndex ].color.set( Math.random() * 0xffffff );
-        // mesh.geometry.colorsNeedUpdate = true;
+      //   // object.geometry.faces[ faceIndex ].color.set( Math.random() * 0xffffff );
+      //   // mesh.geometry.colorsNeedUpdate = true;
 
 
-        // console.log(faceIdx2);
+      //   // console.log(faceIdx2);
 
-        console.log(mesh);
+      //   console.log(mesh);
 
         
-        // set newly selected faces to red
-        // setFaceColor(faceIdx1, selectionColor);
-        // setFaceColor(faceIdx2, selectionColor);
+      //   // set newly selected faces to red
+      //   // setFaceColor(faceIdx1, selectionColor);
+      //   // setFaceColor(faceIdx2, selectionColor);
       
-      }
+      // }
       // jQuery(document).ready(function() {
 
       //   var mouseX = 0, mouseY = 0;
