@@ -12,9 +12,9 @@ import {DecalGeometry} from  'three/examples/jsm/geometries/DecalGeometry.js';
 import {Camera} from 'three/src/cameras/Camera.js';
 import { Frustum } from 'three';
 
-// THREE.Mesh.prototype.raycast = acceleratedRaycast;
-// THREE.BufferGeometry.prototype.computeBoundingBox = computeBoundsTree;
-// THREE.BufferGeometry.prototype.dispose = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+THREE.BufferGeometry.prototype.computeBoundingBox = computeBoundsTree;
+THREE.BufferGeometry.prototype.dispose = disposeBoundsTree;
 @Component({
   selector: 'app-shadow',
   templateUrl: './shadow.component.html',
