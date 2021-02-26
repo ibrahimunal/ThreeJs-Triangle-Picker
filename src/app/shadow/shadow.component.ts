@@ -4,22 +4,22 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import {GUI}  from 'three/examples/jsm/libs/dat.gui.module';
-// import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree, CONTAINED, INTERSECTED, NOT_INTERSECTED } from '../../../three-src/index';
+import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree, CONTAINED, INTERSECTED, NOT_INTERSECTED } from '../../../three-src/index';
 import * as $ from 'jquery/dist/jquery.min.js';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { Color, Mesh, TorusGeometry } from 'three/build/three.module';
 import {DecalGeometry} from  'three/examples/jsm/geometries/DecalGeometry.js';
 import {Camera} from 'three/src/cameras/Camera.js';
 import { Frustum } from 'three';
-import { trimWhiteSpaces , computeBoundsTree} from '../shadow/string-helper';
+// import { trimWhiteSpaces , computeBoundsTree} from '../shadow/string-helper';
 
 
 
 
 
-// THREE.Mesh.prototype.raycast = acceleratedRaycast;
-// THREE.BufferGeometry.prototype.com = computeBoundsTree;
-// THREE.BufferGeometry.prototype.dispose = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.dispose = disposeBoundsTree;
 
 @Component({
   selector: 'app-shadow',
@@ -545,8 +545,10 @@ export class ShadowComponent implements OnInit {
         colorAttr = new THREE.BufferAttribute( colorArray, 3, true );
         // colorAttr.dynamic = true;
         geometry.setAttribute( 'color', colorAttr );
-        
-        console.log(geometry);
+        geometry.computeBoundsTree();
+        geometry.computeBoundingBox();
+        // geometry.disposeBoundsTree();   
+        // console.log(Object.keys(geometry[3]));     
         var material = new THREE.MeshPhongMaterial({
           
            color: 0x34c3eb ,  
@@ -572,12 +574,122 @@ export class ShadowComponent implements OnInit {
         // }
         // let mesh = new THREE.MeshPhongMaterial(geometry, material);
         mesh = new THREE.Mesh(geometry, material);
+        const bvh = mesh.geometry.boundsTree;
+        colorAttr = mesh.geometry.getAttribute('color');
+        const indexAttr = geometry.index;
+        console.log(bvh)
+        if ( controls) {
 
+          brushMesh.visible = false;
+      
+        } else {
+      
+          brushMesh.scale.setScalar( 2 );
+      
+          const raycaster = new THREE.Raycaster();
+          raycaster.setFromCamera( mouse, camera );
+          // raycaster.firstHitOnly = true;
+      
+          const res = raycaster.intersectObject( targetMesh, true );
+          if ( res.length ) {
+      
+            brushMesh.position.copy( res[ 0 ].point );
+            controls.enabled = false;
+            brushMesh.visible = true;
+      
+            const inverseMatrix = new THREE.Matrix4();
+            // inverseMatrix.copy( targetMesh.matrixWorld ).invert();
+      
+            const sphere = new THREE.Sphere();
+            sphere.center.copy( brushMesh.position ).applyMatrix4( inverseMatrix );
+            sphere.radius = 2;
+      
+            const indices = [];
+            const tempVec = new THREE.Vector3();
+            bvh.shapecast(
+              targetMesh,
+              box => {
+      
+                const intersects = sphere.intersectsBox( box );
+                const { min, max } = box;
+                if ( intersects ) {
+      
+                  for ( let x = 0; x <= 1; x ++ ) {
+      
+                    for ( let y = 0; y <= 1; y ++ ) {
+      
+                      for ( let z = 0; z <= 1; z ++ ) {
+      
+                        tempVec.set(
+                          x === 0 ? min.x : max.x,
+                          y === 0 ? min.y : max.y,
+                          z === 0 ? min.z : max.z
+                        );
+                        if ( ! sphere.containsPoint( tempVec ) ) {
+      
+                          return INTERSECTED;
+      
+                        }
+      
+                      }
+      
+                    }
+      
+                  }
+      
+                  return CONTAINED;
+      
+                }
+      
+                return intersects ? INTERSECTED : NOT_INTERSECTED;
+      
+              },
+              ( tri, a, b, c, contained ) => {
+      
+                if ( contained || tri.intersectsSphere( sphere ) ) {
+      
+                  indices.push( a, b, c );
+      
+                }
+      
+                return false;
+      
+              }
+            );
+      
+            if ( mouseType === 0 || mouseType === 2 ) {
+      
+              let r = 255, g = 255, b = 255;
+              if ( mouseType === 0 ) {
+      
+                r = 15;
+                g = 78;
+                b = 85;
+      
+              }
+      
+              for ( let i = 0, l = indices.length; i < l; i ++ ) {
+      
+                const i2 = indexAttr.getX( indices[ i ] );
+                colorAttr.setX( i2, r );
+                colorAttr.setY( i2, g );
+                colorAttr.setZ( i2, b );
+      
+              }
+              colorAttr.needsUpdate = true;
+      
+            }
+      
+          } 
+      
+        }
+      
+      
+      
         // mesh.geometry.frustumCulled = false;
         //  var geo = new THREE.EdgesGeometry( mesh.geometry ); // or WireframeGeometry
-        geometry.computeBoundingBox();
         
-        const bvh = geometry;
+        // const bvh = geometry;
         //  var mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
         // mesh.geometry.attributes.color.needsUpdate = true;
         //  var wireframe = new THREE.LineSegments( geo, mat );

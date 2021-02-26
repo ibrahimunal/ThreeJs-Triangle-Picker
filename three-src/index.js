@@ -37,7 +37,7 @@ function acceleratedRaycast(raycaster, intersects) {
 
 }
 
-function computeBoundsTree(options) {
+function computeBoundsTree() {
 
 	this.boundsTree = new MeshBVH(this, options);
 	return this.boundsTree;
